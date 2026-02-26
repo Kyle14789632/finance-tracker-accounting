@@ -379,5 +379,3 @@ Double-entry supports generating financial statements like balance sheet and inc
 - [ ] No critical bugs in flows
 - [ ] Demo data available
 - [ ] Repo docs complete
-
-<!-- test ci workflow -->
