@@ -70,4 +70,4 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: VITE_API_BASE_URL
-        value: https://finance-tracker-api.onrender.com
+        value: https://finance-tracker-api-4u2n.onrender.com
