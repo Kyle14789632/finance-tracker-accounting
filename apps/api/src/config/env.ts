@@ -38,6 +38,8 @@ const parseCorsOrigins = (configuredOrigins: string): string[] => {
     throw new Error("CORS_ORIGIN must include at least one allowed origin");
   }
 
+  const normalizedOrigins = new Set<string>();
+
   for (const origin of origins) {
     if (origin === "*") {
       throw new Error("CORS_ORIGIN cannot use wildcard (*) in this app");
@@ -53,9 +55,13 @@ const parseCorsOrigins = (configuredOrigins: string): string[] => {
     if (!["http:", "https:"].includes(parsedOriginUrl.protocol)) {
       throw new Error(`CORS_ORIGIN entry must use http/https: ${origin}`);
     }
+
+    // Normalize entries to origin-only form so copied values like
+    // https://example.com/ or https://example.com/path still match browser Origin.
+    normalizedOrigins.add(parsedOriginUrl.origin);
   }
 
-  return origins;
+  return Array.from(normalizedOrigins);
 };
 
 const corsOrigins = parseCorsOrigins(parsedEnv.CORS_ORIGIN);
