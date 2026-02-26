@@ -107,6 +107,23 @@ Suggested flow:
 
 Do not commit API client collection/environment exports into this repository.
 
+## CI/CD
+
+This repository uses GitHub Actions + Render:
+
+- CI (GitHub Actions):
+  - Workflow: `.github/workflows/ci.yml`
+  - Triggers: push to `main`, pull requests to `main`
+  - Checks: `npm ci --include=dev`, `npm run lint`, `npm run build`
+- CD (Render):
+  - Render services auto-deploy from the latest `main` commit (based on your Blueprint/service settings).
+  - For environment changes (for example `VITE_API_BASE_URL`, `CORS_ORIGIN`), update Render env vars and redeploy.
+
+Recommended branch protection:
+
+- Require pull request before merging to `main`
+- Require status check `CI / Lint And Build` to pass
+
 ## Demo media (optional)
 
 If screenshots/GIFs are not ready yet, keep this checklist for later:
