@@ -13,7 +13,7 @@ services:
     runtime: node
     plan: free
     autoDeployTrigger: commit
-    buildCommand: npm ci && npm run build -w @sft/shared && npm run prisma:generate -w @sft/api && npm run build -w @sft/api
+    buildCommand: npm ci --include=dev && npm run build -w @sft/shared && npm run prisma:generate -w @sft/api && npm run build -w @sft/api
     startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run start -w @sft/api
     healthCheckPath: /health
     buildFilter:
@@ -50,7 +50,7 @@ services:
     name: finance-tracker-web
     runtime: static
     autoDeployTrigger: commit
-    buildCommand: npm ci && npm run build -w @sft/shared && npm run build -w @sft/web
+    buildCommand: npm ci --include=dev && npm run build -w @sft/shared && npm run build -w @sft/web
     staticPublishPath: apps/web/dist
     buildFilter:
       paths:
