@@ -1,0 +1,74 @@
+previews:
+  generation: off
+
+databases:
+  - name: finance-tracker-db
+    plan: free
+    databaseName: finance_tracker_accounting
+    user: finance_tracker_user
+
+services:
+  - type: web
+    name: finance-tracker-api
+    runtime: node
+    plan: free
+    autoDeployTrigger: commit
+    buildCommand: npm ci && npm run build -w @sft/shared && npm run prisma:generate -w @sft/api && npm run build -w @sft/api
+    preDeployCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+    startCommand: npm run start -w @sft/api
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - tsconfig.base.json
+        - turbo.json
+      ignoredPaths:
+        - "**/*.md"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finance-tracker-db
+          property: connectionString
+      - key: CORS_ORIGIN
+        value: https://finance-tracker-web.onrender.com
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+  - type: web
+    name: finance-tracker-web
+    runtime: static
+    autoDeployTrigger: commit
+    buildCommand: npm ci && npm run build -w @sft/shared && npm run build -w @sft/web
+    staticPublishPath: apps/web/dist
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - tsconfig.base.json
+        - turbo.json
+      ignoredPaths:
+        - "**/*.md"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_BASE_URL
+        value: https://finance-tracker-api.onrender.com
