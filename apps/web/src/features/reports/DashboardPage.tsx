@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { CalendarDays } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -12,8 +13,9 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
+  YAxis,
 } from "recharts";
+import { MonthPickerField } from "../../components/ui/MonthPickerField";
 import { getApiErrorMessage } from "../../utils/api-errors";
 import { centsToDisplayNumber, formatMoneyCents, moneyStringToCents } from "../../utils/money";
 import { useAuthSession } from "../auth/auth-session-context";
@@ -36,14 +38,14 @@ const kpiToneClass: Record<KpiTone, string> = {
   income: "border-sage-100 bg-sage-100/40 text-emerald-900",
   expense: "border-primary-100 bg-primary-50 text-primary-900",
   "net-positive": "border-emerald-200 bg-emerald-50 text-emerald-900",
-  "net-negative": "border-rose-200 bg-rose-50 text-rose-900"
+  "net-negative": "border-rose-200 bg-rose-50 text-rose-900",
 };
 
 const KpiCard = ({ label, value, subtitle, tone }: KpiCardProps) => (
   <article className={`rounded-2xl border p-4 ${kpiToneClass[tone]}`}>
-    <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
-    <p className="mt-2 text-xl font-semibold">{value}</p>
-    <p className="mt-1 text-xs text-slate-600">{subtitle}</p>
+    <p className="text-sm font-medium uppercase tracking-wide">{label}</p>
+    <p className="mt-2 text-2xl font-semibold">{value}</p>
+    <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
   </article>
 );
 
@@ -85,7 +87,7 @@ export const DashboardPage = () => {
   const monthlySummaryQuery = useQuery({
     queryKey: ["reports", "monthly-summary", selectedMonth],
     enabled: Boolean(accessToken),
-    queryFn: () => getMonthlySummary(accessToken as string, { month: selectedMonth })
+    queryFn: () => getMonthlySummary(accessToken as string, { month: selectedMonth }),
   });
 
   const expenseBreakdownQuery = useQuery({
@@ -94,8 +96,8 @@ export const DashboardPage = () => {
     queryFn: () =>
       getCategoryBreakdown(accessToken as string, {
         month: selectedMonth,
-        type: "EXPENSE"
-      })
+        type: "EXPENSE",
+      }),
   });
 
   const summary = monthlySummaryQuery.data?.summary;
@@ -106,7 +108,7 @@ export const DashboardPage = () => {
       style: "currency",
       currency: user?.currency ?? "USD",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   }, [user?.currency]);
 
@@ -118,12 +120,13 @@ export const DashboardPage = () => {
       name: item.categoryName,
       shortName: toShortLabel(item.categoryName),
       value: centsToDisplayNumber(moneyStringToCents(item.total)),
-      fill: chartPalette[index % chartPalette.length]
+      fill: chartPalette[index % chartPalette.length],
     }));
   }, [expenseBreakdown?.categories]);
 
   const isInitialLoading =
-    (!summary || !expenseBreakdown) && (monthlySummaryQuery.isLoading || expenseBreakdownQuery.isLoading);
+    (!summary || !expenseBreakdown) &&
+    (monthlySummaryQuery.isLoading || expenseBreakdownQuery.isLoading);
 
   const errorMessage = monthlySummaryQuery.isError
     ? getApiErrorMessage(monthlySummaryQuery.error, "Failed to load dashboard data.")
@@ -145,28 +148,26 @@ export const DashboardPage = () => {
   return (
     <>
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Monthly overview</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-xl font-semibold text-slate-900">Monthly overview</h2>
+            <p className="mt-1 text-base text-slate-600">
               Review total income, spending, and expense mix for a selected month.
             </p>
           </div>
 
-          <label className="block sm:w-56">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Month</span>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(event) => setSelectedMonth(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            />
-          </label>
+          <MonthPickerField
+            value={selectedMonth}
+            onChange={setSelectedMonth}
+            icon={CalendarDays}
+            ariaLabel="Select month"
+            className="sm:w-64"
+          />
         </div>
       </section>
 
       {errorMessage ? (
-        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span>{errorMessage}</span>
             <button
@@ -175,7 +176,7 @@ export const DashboardPage = () => {
                 void monthlySummaryQuery.refetch();
                 void expenseBreakdownQuery.refetch();
               }}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
             >
               Retry
             </button>
@@ -187,13 +188,13 @@ export const DashboardPage = () => {
 
       {!isInitialLoading && hasNoData ? (
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <h3 className="text-base font-semibold text-slate-900">No report data yet</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-900">No report data yet</h3>
+          <p className="mt-2 text-base text-slate-600">
             Add your first transaction for {selectedMonth} to populate dashboard totals and charts.
           </p>
           <Link
             to="/app/transactions"
-            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2 text-base font-medium text-white hover:bg-primary-700"
           >
             Add first transaction
           </Link>
@@ -218,20 +219,24 @@ export const DashboardPage = () => {
             <KpiCard
               label="Net"
               value={formatMoneyCents(currencyFormatter, net)}
-              subtitle={net >= 0n ? "You stayed cash-positive this month" : "Expenses exceeded income this month"}
+              subtitle={
+                net >= 0n
+                  ? "You stayed cash-positive this month"
+                  : "Expenses exceeded income this month"
+              }
               tone={net >= 0n ? "net-positive" : "net-negative"}
             />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900">Expense breakdown (pie)</h3>
-              <p className="mt-1 text-xs text-slate-600">
+              <h3 className="text-base font-semibold text-slate-900">Expense breakdown (pie)</h3>
+              <p className="mt-1 text-sm text-slate-600">
                 Category share of total monthly expenses.
               </p>
 
               {expenseChartData.length === 0 ? (
-                <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-600">
                   No expense categories for this month.
                 </p>
               ) : (
@@ -265,13 +270,11 @@ export const DashboardPage = () => {
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900">Expense breakdown (bar)</h3>
-              <p className="mt-1 text-xs text-slate-600">
-                Absolute spending amount by category.
-              </p>
+              <h3 className="text-base font-semibold text-slate-900">Expense breakdown (bar)</h3>
+              <p className="mt-1 text-sm text-slate-600">Absolute spending amount by category.</p>
 
               {expenseChartData.length === 0 ? (
-                <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-600">
                   No expense categories for this month.
                 </p>
               ) : (
@@ -287,12 +290,12 @@ export const DashboardPage = () => {
                         angle={-20}
                         textAnchor="end"
                         interval={0}
-                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        tick={{ fontSize: 13, fill: "#64748b" }}
                       />
                       <YAxis
                         tickFormatter={(value) => currencyFormatter.format(Number(value))}
-                        tick={{ fontSize: 12, fill: "#64748b" }}
-                        width={88}
+                        tick={{ fontSize: 13, fill: "#64748b" }}
+                        width={96}
                       />
                       <Tooltip
                         formatter={(value: number | string | undefined) =>

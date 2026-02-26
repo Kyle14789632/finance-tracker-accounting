@@ -6,12 +6,25 @@ import type {
   CreateTransactionRequest,
   JournalEntry,
   Transaction,
-  TransactionType
+  TransactionType,
 } from "@sft/shared";
+import {
+  Archive,
+  ArrowUpDown,
+  CalendarDays,
+  Landmark,
+  Loader2,
+  Pencil,
+  Tags,
+  type LucideIcon,
+} from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { UseFormSetError } from "react-hook-form";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { MonthPickerField } from "../../components/ui/MonthPickerField";
+import { SelectMenuField, type SelectMenuOption } from "../../components/ui/SelectMenuField";
 import { applyApiFormErrors, getApiErrorMessage } from "../../utils/api-errors";
 import { formatMoneyCents, formatMoneyString, moneyStringToCents } from "../../utils/money";
 import { getAccounts } from "../accounts/api";
@@ -22,30 +35,58 @@ import {
   deleteTransaction,
   getTransactionJournal,
   getTransactions,
-  updateTransaction
+  updateTransaction,
 } from "./api";
 import { moneyStringSchema, transactionTypeSchema } from "./schemas";
 
 const transactionTypeLabel: Record<TransactionType, string> = {
   INCOME: "Income",
-  EXPENSE: "Expense"
+  EXPENSE: "Expense",
 };
 
 const transactionTypeBadgeClass: Record<TransactionType, string> = {
   INCOME: "border border-sage-100 bg-sage-100/60 text-emerald-800",
-  EXPENSE: "border border-primary-100 bg-primary-50 text-primary-700"
+  EXPENSE: "border border-primary-100 bg-primary-50 text-primary-700",
 };
 
 const journalSideLabel: Record<JournalEntry["side"], string> = {
   DEBIT: "Debit",
-  CREDIT: "Credit"
+  CREDIT: "Credit",
 };
 
 const journalAccountTypeLabel: Record<JournalEntry["accountType"], string> = {
   ASSET: "Asset",
   REVENUE: "Revenue",
-  EXPENSE: "Expense"
+  EXPENSE: "Expense",
 };
+
+const modalTransactionTypeOptions: SelectMenuOption[] = [
+  {
+    value: "INCOME",
+    label: "Income",
+    helperText: "Money received",
+  },
+  {
+    value: "EXPENSE",
+    label: "Expense",
+    helperText: "Money spent",
+  },
+];
+
+const transactionFilterTypeOptions: SelectMenuOption[] = [
+  {
+    value: "ALL",
+    label: "All types",
+  },
+  {
+    value: "INCOME",
+    label: "Income only",
+  },
+  {
+    value: "EXPENSE",
+    label: "Expense only",
+  },
+];
 
 const transactionFormSchema = z.object({
   accountId: z.string().uuid("Account is required"),
@@ -53,7 +94,7 @@ const transactionFormSchema = z.object({
   type: transactionTypeSchema,
   amount: moneyStringSchema,
   occurredAtLocal: z.string().min(1, "Occurred at date/time is required"),
-  note: z.string().max(500, "Note must be at most 500 characters").optional()
+  note: z.string().max(500, "Note must be at most 500 characters").optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -68,7 +109,7 @@ type TransactionModalProps = {
   onClose: () => void;
   onSubmit: (
     values: TransactionFormValues,
-    setError: UseFormSetError<TransactionFormValues>
+    setError: UseFormSetError<TransactionFormValues>,
   ) => Promise<void>;
 };
 
@@ -82,7 +123,7 @@ const toDateTimeLocal = (isoString: string): string => {
   const pad = (value: number): string => value.toString().padStart(2, "0");
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours()
+    date.getHours(),
   )}:${pad(date.getMinutes())}`;
 };
 
@@ -106,9 +147,10 @@ const TransactionModal = ({
   isSubmitting,
   errorMessage,
   onClose,
-  onSubmit
+  onSubmit,
 }: TransactionModalProps) => {
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -116,7 +158,7 @@ const TransactionModal = ({
     setValue,
     getValues,
     setError,
-    formState: { errors }
+    formState: { errors },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
@@ -125,8 +167,8 @@ const TransactionModal = ({
       type: "EXPENSE",
       amount: "",
       occurredAtLocal: getDefaultOccurredAtLocal(),
-      note: ""
-    }
+      note: "",
+    },
   });
 
   useEffect(() => {
@@ -144,8 +186,10 @@ const TransactionModal = ({
       categoryId: transaction?.categoryId ?? defaultCategoryId,
       type: defaultType,
       amount: transaction?.amount ?? "",
-      occurredAtLocal: transaction ? toDateTimeLocal(transaction.occurredAt) : getDefaultOccurredAtLocal(),
-      note: transaction?.note ?? ""
+      occurredAtLocal: transaction
+        ? toDateTimeLocal(transaction.occurredAt)
+        : getDefaultOccurredAtLocal(),
+      note: transaction?.note ?? "",
     });
   }, [accounts, categories, isOpen, reset, transaction]);
 
@@ -165,7 +209,7 @@ const TransactionModal = ({
 
     const nextCategoryId = categories.find((category) => category.type === selectedType)?.id ?? "";
     setValue("categoryId", nextCategoryId, {
-      shouldValidate: true
+      shouldValidate: true,
     });
   }, [categories, getValues, isOpen, selectedType, setValue]);
 
@@ -182,8 +226,8 @@ const TransactionModal = ({
       <section className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            <p className="mt-1 text-base text-slate-600">
               Capture amount, account, category, and date in one place.
             </p>
           </div>
@@ -191,14 +235,14 @@ const TransactionModal = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Close
           </button>
         </div>
 
         {errorMessage ? (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-base text-rose-700">
             {errorMessage}
           </div>
         ) : null}
@@ -210,93 +254,121 @@ const TransactionModal = ({
           })}
         >
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Type</span>
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              {...register("type")}
-            >
-              <option value="INCOME">Income</option>
-              <option value="EXPENSE">Expense</option>
-            </select>
-            {errors.type ? <span className="mt-1 block text-xs text-rose-600">{errors.type.message}</span> : null}
+            <span className="text-base font-medium text-slate-700">Type</span>
+            <Controller
+              control={control}
+              name="type"
+              render={({ field }) => (
+                <SelectMenuField
+                  className="mt-1"
+                  ariaLabel="Select transaction type"
+                  value={field.value}
+                  onChange={(nextValue) => {
+                    field.onChange(nextValue as TransactionType);
+                  }}
+                  options={modalTransactionTypeOptions}
+                />
+              )}
+            />
+            {errors.type ? (
+              <span className="mt-1 block text-sm text-rose-600">{errors.type.message}</span>
+            ) : null}
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Amount</span>
+            <span className="text-base font-medium text-slate-700">Amount</span>
             <input
               type="text"
               inputMode="decimal"
               placeholder="0.00"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               {...register("amount")}
             />
-            {errors.amount ? <span className="mt-1 block text-xs text-rose-600">{errors.amount.message}</span> : null}
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Account</span>
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              {...register("accountId")}
-            >
-              <option value="">Select account</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-            {errors.accountId ? (
-              <span className="mt-1 block text-xs text-rose-600">{errors.accountId.message}</span>
+            {errors.amount ? (
+              <span className="mt-1 block text-sm text-rose-600">{errors.amount.message}</span>
             ) : null}
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Category</span>
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              {...register("categoryId")}
-            >
-              <option value="">Select category</option>
-              {categoryOptions.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <span className="text-base font-medium text-slate-700">Account</span>
+            <Controller
+              control={control}
+              name="accountId"
+              render={({ field }) => (
+                <SelectMenuField
+                  className="mt-1"
+                  ariaLabel="Select account"
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select account"
+                  options={accounts.map((account) => ({
+                    value: account.id,
+                    label: account.name,
+                  }))}
+                />
+              )}
+            />
+            {errors.accountId ? (
+              <span className="mt-1 block text-sm text-rose-600">{errors.accountId.message}</span>
+            ) : null}
+          </label>
+
+          <label className="block">
+            <span className="text-base font-medium text-slate-700">Category</span>
+            <Controller
+              control={control}
+              name="categoryId"
+              render={({ field }) => (
+                <SelectMenuField
+                  className="mt-1"
+                  ariaLabel="Select category"
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select category"
+                  options={categoryOptions.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  }))}
+                />
+              )}
+            />
             {errors.categoryId ? (
-              <span className="mt-1 block text-xs text-rose-600">{errors.categoryId.message}</span>
+              <span className="mt-1 block text-sm text-rose-600">{errors.categoryId.message}</span>
             ) : null}
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Occurred at</span>
+            <span className="text-base font-medium text-slate-700">Occurred at</span>
             <input
               type="datetime-local"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               {...register("occurredAtLocal")}
             />
             {errors.occurredAtLocal ? (
-              <span className="mt-1 block text-xs text-rose-600">{errors.occurredAtLocal.message}</span>
+              <span className="mt-1 block text-sm text-rose-600">
+                {errors.occurredAtLocal.message}
+              </span>
             ) : null}
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Note</span>
+            <span className="text-base font-medium text-slate-700">Note</span>
             <textarea
               rows={3}
               maxLength={500}
-              className="mt-1 w-full resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+              className="mt-1 w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-base outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               placeholder="Optional note"
               {...register("note")}
             />
-            {errors.note ? <span className="mt-1 block text-xs text-rose-600">{errors.note.message}</span> : null}
+            {errors.note ? (
+              <span className="mt-1 block text-sm text-rose-600">{errors.note.message}</span>
+            ) : null}
           </label>
 
           <button
             type="submit"
             disabled={isSubmitting || accounts.length === 0 || categoryOptions.length === 0}
-            className="sm:col-span-2 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
+            className="sm:col-span-2 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
           >
             {isSubmitting ? "Saving..." : submitLabel}
           </button>
@@ -319,6 +391,20 @@ const TransactionsLoadingState = () => (
   </section>
 );
 
+type FilterFieldProps = {
+  icon: LucideIcon;
+  children: ReactNode;
+};
+
+const FilterField = ({ icon: Icon, children }: FilterFieldProps) => (
+  <div className="flex items-center rounded-xl border border-slate-300 bg-white transition focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100">
+    <div className="inline-flex h-[42px] items-center rounded-l-xl border-r border-slate-200 bg-slate-50 px-3 text-primary-600">
+      <Icon className="h-4 w-4" aria-hidden="true" />
+    </div>
+    <div className="min-w-0 flex-1">{children}</div>
+  </div>
+);
+
 const currentMonth = new Date().toISOString().slice(0, 7);
 
 export const TransactionsPage = () => {
@@ -338,13 +424,13 @@ export const TransactionsPage = () => {
   const accountsQuery = useQuery({
     queryKey: ["accounts", "transactions"],
     enabled: Boolean(accessToken),
-    queryFn: () => getAccounts(accessToken as string)
+    queryFn: () => getAccounts(accessToken as string),
   });
 
   const categoriesQuery = useQuery({
     queryKey: ["categories", "transactions"],
     enabled: Boolean(accessToken),
-    queryFn: () => getCategories(accessToken as string)
+    queryFn: () => getCategories(accessToken as string),
   });
 
   const transactionsQuery = useQuery({
@@ -353,7 +439,7 @@ export const TransactionsPage = () => {
       selectedMonth,
       selectedTypeFilter,
       selectedAccountFilter,
-      selectedCategoryFilter
+      selectedCategoryFilter,
     ],
     enabled: Boolean(accessToken),
     queryFn: () =>
@@ -361,21 +447,23 @@ export const TransactionsPage = () => {
         month: selectedMonth,
         type: selectedTypeFilter === "ALL" ? undefined : selectedTypeFilter,
         accountId: selectedAccountFilter === "ALL" ? undefined : selectedAccountFilter,
-        categoryId: selectedCategoryFilter === "ALL" ? undefined : selectedCategoryFilter
-      })
+        categoryId: selectedCategoryFilter === "ALL" ? undefined : selectedCategoryFilter,
+      }),
   });
 
   const journalQuery = useQuery({
     queryKey: ["transactions", "journal", expandedTransactionId],
-    enabled: Boolean(accessToken) && Boolean(user?.learningModeEnabled) && Boolean(expandedTransactionId),
-    queryFn: () => getTransactionJournal(accessToken as string, expandedTransactionId as string)
+    enabled:
+      Boolean(accessToken) && Boolean(user?.learningModeEnabled) && Boolean(expandedTransactionId),
+    queryFn: () => getTransactionJournal(accessToken as string, expandedTransactionId as string),
   });
 
   const createTransactionMutation = useMutation({
-    mutationFn: (payload: CreateTransactionRequest) => createTransaction(accessToken as string, payload),
+    mutationFn: (payload: CreateTransactionRequest) =>
+      createTransaction(accessToken as string, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    }
+    },
   });
 
   const updateTransactionMutation = useMutation({
@@ -383,23 +471,30 @@ export const TransactionsPage = () => {
       updateTransaction(accessToken as string, params.transactionId, params.payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    }
+    },
   });
 
   const deleteTransactionMutation = useMutation({
     mutationFn: (transactionId: string) => deleteTransaction(accessToken as string, transactionId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    }
+    },
   });
 
-  const accounts = useMemo(() => accountsQuery.data?.accounts ?? [], [accountsQuery.data?.accounts]);
-  const categories = useMemo(() => categoriesQuery.data?.categories ?? [], [categoriesQuery.data?.categories]);
+  const accounts = useMemo(
+    () => accountsQuery.data?.accounts ?? [],
+    [accountsQuery.data?.accounts],
+  );
+  const categories = useMemo(
+    () => categoriesQuery.data?.categories ?? [],
+    [categoriesQuery.data?.categories],
+  );
   const transactions = useMemo(
     () => transactionsQuery.data?.transactions ?? [],
-    [transactionsQuery.data?.transactions]
+    [transactionsQuery.data?.transactions],
   );
-  const isModalSubmitting = createTransactionMutation.isPending || updateTransactionMutation.isPending;
+  const isModalSubmitting =
+    createTransactionMutation.isPending || updateTransactionMutation.isPending;
   const isFilterLoading = accountsQuery.isLoading || categoriesQuery.isLoading;
 
   const accountNameById = useMemo(() => {
@@ -417,6 +512,26 @@ export const TransactionsPage = () => {
 
     return categories.filter((category) => category.type === selectedTypeFilter);
   }, [categories, selectedTypeFilter]);
+
+  const accountFilterOptions = useMemo<SelectMenuOption[]>(() => {
+    return [
+      { value: "ALL", label: "All accounts" },
+      ...accounts.map((account) => ({
+        value: account.id,
+        label: account.name,
+      })),
+    ];
+  }, [accounts]);
+
+  const categoryFilterOptions = useMemo<SelectMenuOption[]>(() => {
+    return [
+      { value: "ALL", label: "All categories" },
+      ...categoryOptionsForFilter.map((category) => ({
+        value: category.id,
+        label: category.name,
+      })),
+    ];
+  }, [categoryOptionsForFilter]);
 
   useEffect(() => {
     if (selectedCategoryFilter === "ALL") {
@@ -448,7 +563,9 @@ export const TransactionsPage = () => {
       return;
     }
 
-    const stillVisible = transactions.some((transaction) => transaction.id === expandedTransactionId);
+    const stillVisible = transactions.some(
+      (transaction) => transaction.id === expandedTransactionId,
+    );
 
     if (!stillVisible) {
       setExpandedTransactionId(null);
@@ -460,7 +577,7 @@ export const TransactionsPage = () => {
       style: "currency",
       currency: user?.currency ?? "USD",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   }, [user?.currency]);
 
@@ -470,7 +587,7 @@ export const TransactionsPage = () => {
       month: "short",
       day: "numeric",
       hour: "numeric",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   }, []);
 
@@ -504,7 +621,7 @@ export const TransactionsPage = () => {
 
   const handleModalSubmit = async (
     values: TransactionFormValues,
-    setError: UseFormSetError<TransactionFormValues>
+    setError: UseFormSetError<TransactionFormValues>,
   ) => {
     if (!accessToken) {
       setModalError("Your session expired. Please sign in again.");
@@ -516,7 +633,7 @@ export const TransactionsPage = () => {
     if (!selectedCategory || selectedCategory.type !== values.type) {
       setError("categoryId", {
         type: "manual",
-        message: "Category must match transaction type."
+        message: "Category must match transaction type.",
       });
       setModalError("Choose a category that matches the selected type.");
       return;
@@ -527,7 +644,7 @@ export const TransactionsPage = () => {
     if (!occurredAtIso) {
       setError("occurredAtLocal", {
         type: "manual",
-        message: "Occurred at date/time is invalid."
+        message: "Occurred at date/time is invalid.",
       });
       return;
     }
@@ -539,7 +656,7 @@ export const TransactionsPage = () => {
       type: values.type,
       amount: values.amount,
       occurredAt: occurredAtIso,
-      note: note ? note : undefined
+      note: note ? note : undefined,
     };
 
     setModalError(null);
@@ -549,7 +666,7 @@ export const TransactionsPage = () => {
       if (editingTransaction) {
         await updateTransactionMutation.mutateAsync({
           transactionId: editingTransaction.id,
-          payload
+          payload,
         });
       } else {
         await createTransactionMutation.mutateAsync(payload);
@@ -594,79 +711,68 @@ export const TransactionsPage = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Transaction log</h2>
-            <p className="mt-1 text-sm text-slate-600">Track income and expenses with account and category filters.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Transaction log</h2>
+            <p className="mt-1 text-base text-slate-600">
+              Track income and expenses with account and category filters.
+            </p>
           </div>
           <button
             type="button"
             onClick={openAddModal}
             disabled={isFilterLoading || accounts.length === 0 || categories.length === 0}
-            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
+            className="rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
           >
             Add transaction
           </button>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Month</span>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(event) => setSelectedMonth(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            />
-          </label>
+          <MonthPickerField
+            value={selectedMonth}
+            onChange={setSelectedMonth}
+            icon={CalendarDays}
+            ariaLabel="Filter by month"
+          />
 
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Type</span>
-            <select
+          <FilterField icon={ArrowUpDown}>
+            <SelectMenuField
+              ariaLabel="Filter by type"
               value={selectedTypeFilter}
-              onChange={(event) => setSelectedTypeFilter(event.target.value as "ALL" | TransactionType)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            >
-              <option value="ALL">All types</option>
-              <option value="INCOME">Income only</option>
-              <option value="EXPENSE">Expense only</option>
-            </select>
-          </label>
+              onChange={(nextValue) =>
+                setSelectedTypeFilter(nextValue as "ALL" | TransactionType)
+              }
+              options={transactionFilterTypeOptions}
+              variant="plain"
+              menuClassName="left-0 right-0"
+            />
+          </FilterField>
 
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Account</span>
-            <select
+          <FilterField icon={Landmark}>
+            <SelectMenuField
+              ariaLabel="Filter by account"
               value={selectedAccountFilter}
-              onChange={(event) => setSelectedAccountFilter(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            >
-              <option value="ALL">All accounts</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setSelectedAccountFilter}
+              options={accountFilterOptions}
+              variant="plain"
+              menuClassName="left-0 right-0"
+            />
+          </FilterField>
 
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Category</span>
-            <select
+          <FilterField icon={Tags}>
+            <SelectMenuField
+              ariaLabel="Filter by category"
               value={selectedCategoryFilter}
-              onChange={(event) => setSelectedCategoryFilter(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            >
-              <option value="ALL">All categories</option>
-              {categoryOptionsForFilter.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setSelectedCategoryFilter}
+              options={categoryFilterOptions}
+              variant="plain"
+              menuClassName="left-0 right-0"
+            />
+          </FilterField>
         </div>
       </section>
 
       {pageError ? (
-        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span>{pageError}</span>
             <button
@@ -675,7 +781,7 @@ export const TransactionsPage = () => {
                 setPageError(null);
                 void transactionsQuery.refetch();
               }}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
             >
               Retry
             </button>
@@ -688,14 +794,14 @@ export const TransactionsPage = () => {
 
         {!transactionsQuery.isLoading && transactionsQuery.isError ? (
           <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-            <h3 className="text-sm font-semibold text-rose-700">Could not load transactions</h3>
-            <p className="mt-1 text-sm text-rose-600">
+            <h3 className="text-base font-semibold text-rose-700">Could not load transactions</h3>
+            <p className="mt-1 text-base text-rose-600">
               {getApiErrorMessage(transactionsQuery.error, "Please try again in a few seconds.")}
             </p>
             <button
               type="button"
               onClick={() => void transactionsQuery.refetch()}
-              className="mt-4 rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+              className="mt-4 rounded-lg border border-rose-200 bg-white px-3 py-2 text-base font-medium text-rose-700 hover:bg-rose-100"
             >
               Retry
             </button>
@@ -704,15 +810,17 @@ export const TransactionsPage = () => {
 
         {!transactionsQuery.isLoading && !transactionsQuery.isError && transactions.length === 0 ? (
           <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-            <h3 className="text-base font-semibold text-slate-900">No transactions for this filter</h3>
-            <p className="mt-2 text-sm text-slate-600">
+            <h3 className="text-lg font-semibold text-slate-900">
+              No transactions for this filter
+            </h3>
+            <p className="mt-2 text-base text-slate-600">
               Add your first transaction for {selectedMonth} to start building reports.
             </p>
             <button
               type="button"
               onClick={openAddModal}
               disabled={accounts.length === 0 || categories.length === 0}
-              className="mt-5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
+              className="mt-5 rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-primary-300"
             >
               Create first transaction
             </button>
@@ -723,18 +831,19 @@ export const TransactionsPage = () => {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <ul className="divide-y divide-slate-100">
               {transactions.map((transaction) => {
-                const amountColor = transaction.type === "INCOME" ? "text-emerald-700" : "text-primary-700";
+                const amountColor =
+                  transaction.type === "INCOME" ? "text-emerald-700" : "text-primary-700";
                 const transactionAmountCents = moneyStringToCents(transaction.amount);
                 const signedAmount = `${transaction.type === "INCOME" ? "+" : "-"}${formatMoneyCents(
                   currencyFormatter,
-                  transactionAmountCents
+                  transactionAmountCents,
                 )}`;
                 const category = categoryById.get(transaction.categoryId);
                 const accountName = accountNameById.get(transaction.accountId) ?? "Unknown account";
                 const isDeleting =
                   deleteTransactionMutation.isPending && deletePendingId === transaction.id;
                 const isExpanded = expandedTransactionId === transaction.id;
-                const journalEntries = isExpanded ? journalQuery.data?.journalEntries ?? [] : [];
+                const journalEntries = isExpanded ? (journalQuery.data?.journalEntries ?? []) : [];
                 const isJournalLoading = isExpanded && journalQuery.isLoading;
                 const journalErrorMessage =
                   isExpanded && journalQuery.isError
@@ -743,12 +852,12 @@ export const TransactionsPage = () => {
                 const debitTotalCents = journalEntries.reduce(
                   (total, entry) =>
                     entry.side === "DEBIT" ? total + moneyStringToCents(entry.amount) : total,
-                  0n
+                  0n,
                 );
                 const creditTotalCents = journalEntries.reduce(
                   (total, entry) =>
                     entry.side === "CREDIT" ? total + moneyStringToCents(entry.amount) : total,
-                  0n
+                  0n,
                 );
                 const isJournalBalanced = debitTotalCents === creditTotalCents;
                 const journalExplanation =
@@ -761,18 +870,18 @@ export const TransactionsPage = () => {
                   <li key={transaction.id} className="px-4 py-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                        <p className="truncate text-base font-semibold text-slate-900">
                           {category?.name ?? "Unknown category"}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-sm text-slate-500">
                           {dateFormatter.format(new Date(transaction.occurredAt))} - {accountName}
                         </p>
                         {transaction.note ? (
-                          <p className="mt-2 text-sm text-slate-600">{transaction.note}</p>
+                          <p className="mt-2 text-base text-slate-600">{transaction.note}</p>
                         ) : null}
                         <div className="mt-2 flex flex-wrap gap-2">
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${transactionTypeBadgeClass[transaction.type]}`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-sm font-medium ${transactionTypeBadgeClass[transaction.type]}`}
                           >
                             {transactionTypeLabel[transaction.type]}
                           </span>
@@ -780,12 +889,12 @@ export const TransactionsPage = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3">
-                        <p className={`text-sm font-semibold ${amountColor}`}>{signedAmount}</p>
+                        <p className={`text-base font-semibold ${amountColor}`}>{signedAmount}</p>
                         {learningModeEnabled ? (
                           <button
                             type="button"
                             onClick={() => toggleJournalExpansion(transaction.id)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
                           >
                             {isExpanded ? "Hide journal" : "Show journal"}
                           </button>
@@ -793,17 +902,27 @@ export const TransactionsPage = () => {
                         <button
                           type="button"
                           onClick={() => openEditModal(transaction)}
-                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                          aria-label={`Edit ${category?.name ?? "transaction"}`}
+                          title="Edit transaction"
                         >
-                          Edit
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
+                          <span className="sr-only">Edit</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => void handleDeleteTransaction(transaction)}
                           disabled={isDeleting}
-                          className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          aria-label={`Delete ${category?.name ?? "transaction"}`}
+                          title="Delete transaction"
                         >
-                          {isDeleting ? "Deleting..." : "Delete"}
+                          {isDeleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Archive className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          <span className="sr-only">{isDeleting ? "Deleting..." : "Delete"}</span>
                         </button>
                       </div>
                     </div>
@@ -811,20 +930,24 @@ export const TransactionsPage = () => {
                     {learningModeEnabled && isExpanded ? (
                       <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h4 className="text-sm font-semibold text-slate-900">Journal entries</h4>
+                          <h4 className="text-base font-semibold text-slate-900">
+                            Journal entries
+                          </h4>
                           {journalEntries.length > 0 ? (
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                              className={`inline-flex rounded-full px-2.5 py-1 text-sm font-medium ${
                                 isJournalBalanced
                                   ? "border border-sage-200 bg-sage-100/70 text-emerald-800"
                                   : "border border-rose-200 bg-rose-100 text-rose-700"
                               }`}
                             >
-                              {isJournalBalanced ? `Balanced (${journalBalanceText})` : "Unbalanced"}
+                              {isJournalBalanced
+                                ? `Balanced (${journalBalanceText})`
+                                : "Unbalanced"}
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-slate-600">{journalExplanation}</p>
+                        <p className="mt-1 text-sm text-slate-600">{journalExplanation}</p>
 
                         {isJournalLoading ? (
                           <div className="mt-3 animate-pulse space-y-2">
@@ -834,13 +957,13 @@ export const TransactionsPage = () => {
                         ) : null}
 
                         {journalErrorMessage ? (
-                          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <span>{journalErrorMessage}</span>
                               <button
                                 type="button"
                                 onClick={() => void journalQuery.refetch()}
-                                className="rounded-md border border-rose-200 bg-white px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                                className="rounded-md border border-rose-200 bg-white px-2.5 py-1 text-sm font-medium text-rose-700 hover:bg-rose-100"
                               >
                                 Retry
                               </button>
@@ -848,15 +971,17 @@ export const TransactionsPage = () => {
                           </div>
                         ) : null}
 
-                        {!isJournalLoading && !journalErrorMessage && journalEntries.length === 0 ? (
-                          <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                        {!isJournalLoading &&
+                        !journalErrorMessage &&
+                        journalEntries.length === 0 ? (
+                          <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
                             No journal entries found for this transaction.
                           </p>
                         ) : null}
 
                         {!isJournalLoading && !journalErrorMessage && journalEntries.length > 0 ? (
                           <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                               <thead className="bg-slate-50 text-slate-600">
                                 <tr>
                                   <th className="px-3 py-2 font-medium">Side</th>
@@ -869,11 +994,15 @@ export const TransactionsPage = () => {
                                 {journalEntries.map((entry) => (
                                   <tr key={entry.id}>
                                     <td className="px-3 py-2">{journalSideLabel[entry.side]}</td>
-                                    <td className="px-3 py-2">{journalAccountTypeLabel[entry.accountType]}</td>
+                                    <td className="px-3 py-2">
+                                      {journalAccountTypeLabel[entry.accountType]}
+                                    </td>
                                     <td className="px-3 py-2">{entry.label}</td>
                                     <td
                                       className={`px-3 py-2 text-right font-medium ${
-                                        entry.side === "DEBIT" ? "text-emerald-700" : "text-primary-700"
+                                        entry.side === "DEBIT"
+                                          ? "text-emerald-700"
+                                          : "text-primary-700"
                                       }`}
                                     >
                                       {formatMoneyString(currencyFormatter, entry.amount)}
@@ -907,4 +1036,3 @@ export const TransactionsPage = () => {
     </>
   );
 };
-

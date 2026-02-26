@@ -65,12 +65,12 @@ export const SettingsPage = () => {
   if (!accessToken || !user) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-        <h2 className="text-base font-semibold text-slate-900">No settings available</h2>
-        <p className="mt-2 text-sm text-slate-600">Your profile is not loaded yet.</p>
+        <h2 className="text-lg font-semibold text-slate-900">No settings available</h2>
+        <p className="mt-2 text-base text-slate-600">Your profile is not loaded yet.</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          className="mt-5 rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white hover:bg-primary-700"
         >
           Reload session
         </button>
@@ -82,8 +82,8 @@ export const SettingsPage = () => {
     <>
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Learning mode</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <h2 className="text-xl font-semibold text-slate-900">Learning mode</h2>
+          <p className="mt-1 text-base text-slate-600">
             Turn this on to reveal journal entries and accounting explanations in Transactions.
           </p>
         </div>
@@ -91,10 +91,10 @@ export const SettingsPage = () => {
         <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-base font-semibold text-slate-900">
                 {learningModeEnabled ? "Learning mode is enabled" : "Learning mode is disabled"}
               </p>
-              <p className="mt-1 text-xs text-slate-600">{saveStateText}</p>
+              <p className="mt-1 text-sm text-slate-600">{saveStateText}</p>
             </div>
 
             <button
@@ -104,13 +104,13 @@ export const SettingsPage = () => {
               aria-label="Toggle learning mode"
               disabled={updateSettingsMutation.isPending}
               onClick={handleToggle}
-              className={`inline-flex h-8 w-14 items-center rounded-full p-1 transition ${
+              className={`inline-flex h-7 w-12 items-center rounded-full p-1 transition ${
                 learningModeEnabled ? "bg-primary-600" : "bg-slate-300"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <span
-                className={`h-6 w-6 rounded-full bg-white transition ${
-                  learningModeEnabled ? "translate-x-6" : "translate-x-0"
+                className={`h-5 w-5 rounded-full bg-white transition ${
+                  learningModeEnabled ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
@@ -119,14 +119,14 @@ export const SettingsPage = () => {
       </section>
 
       {errorMessage ? (
-        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span>{errorMessage}</span>
             <button
               type="button"
               onClick={handleToggle}
               disabled={updateSettingsMutation.isPending}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Retry
             </button>
