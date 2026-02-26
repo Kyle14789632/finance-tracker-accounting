@@ -14,8 +14,7 @@ services:
     plan: free
     autoDeployTrigger: commit
     buildCommand: npm ci && npm run build -w @sft/shared && npm run prisma:generate -w @sft/api && npm run build -w @sft/api
-    preDeployCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
-    startCommand: npm run start -w @sft/api
+    startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm run start -w @sft/api
     healthCheckPath: /health
     buildFilter:
       paths:
