@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { Calendar, CalendarDays, FileSpreadsheet, type LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { DatePickerField } from "../../components/ui/DatePickerField";
+import { MonthPickerField } from "../../components/ui/MonthPickerField";
+import { SelectMenuField, type SelectMenuOption } from "../../components/ui/SelectMenuField";
 import { getApiErrorMessage } from "../../utils/api-errors";
 import { formatMoneyString } from "../../utils/money";
 import { useAuthSession } from "../auth/auth-session-context";
@@ -11,17 +16,37 @@ const currentAsOfDate = new Date().toISOString().slice(0, 10);
 
 type StatementsTab = "income-statement" | "balance-sheet";
 
+const statementsTabOptions: SelectMenuOption[] = [
+  {
+    value: "income-statement",
+    label: "Income Statement",
+  },
+  {
+    value: "balance-sheet",
+    label: "Balance Sheet",
+  },
+];
+
 type MetricCardProps = {
   label: string;
   value: string;
   subtitle: string;
+  tone: "income" | "expense" | "net" | "asset" | "equity";
 };
 
-const MetricCard = ({ label, value, subtitle }: MetricCardProps) => (
-  <article className="rounded-2xl border border-slate-200 bg-white p-4">
-    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-    <p className="mt-2 text-xl font-semibold text-slate-900">{value}</p>
-    <p className="mt-1 text-xs text-slate-600">{subtitle}</p>
+const metricToneClass: Record<MetricCardProps["tone"], string> = {
+  income: "border-sage-100 bg-sage-100/40 text-emerald-900",
+  expense: "border-primary-100 bg-primary-50 text-primary-900",
+  net: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  asset: "border-sky-200 bg-sky-50 text-sky-900",
+  equity: "border-indigo-200 bg-indigo-50 text-indigo-900",
+};
+
+const MetricCard = ({ label, value, subtitle, tone }: MetricCardProps) => (
+  <article className={`rounded-2xl border p-4 ${metricToneClass[tone]}`}>
+    <p className="text-sm font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+    <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
   </article>
 );
 
@@ -52,7 +77,7 @@ const BreakdownTable = ({
   title,
   subtitle,
   items,
-  currencyFormatter
+  currencyFormatter,
 }: {
   title: string;
   subtitle: string;
@@ -60,11 +85,11 @@ const BreakdownTable = ({
   currencyFormatter: Intl.NumberFormat;
 }) => (
   <section className="rounded-2xl border border-slate-200 bg-white p-5">
-    <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-    <p className="mt-1 text-xs text-slate-600">{subtitle}</p>
+    <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+    <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
 
     {items.length === 0 ? (
-      <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-600">
         No categories for this period.
       </p>
     ) : (
@@ -72,15 +97,19 @@ const BreakdownTable = ({
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Category</th>
-              <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Total</th>
+              <th className="px-3 py-2 text-left text-sm font-medium uppercase tracking-wide text-slate-500">
+                Category
+              </th>
+              <th className="px-3 py-2 text-right text-sm font-medium uppercase tracking-wide text-slate-500">
+                Total
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
             {items.map((item) => (
               <tr key={item.categoryId}>
-                <td className="px-3 py-2 text-sm text-slate-700">{item.categoryName}</td>
-                <td className="px-3 py-2 text-right text-sm font-medium text-slate-900">
+                <td className="px-3 py-2 text-base text-slate-700">{item.categoryName}</td>
+                <td className="px-3 py-2 text-right text-base font-medium text-slate-900">
                   {formatMoneyString(currencyFormatter, item.total)}
                 </td>
               </tr>
@@ -92,13 +121,19 @@ const BreakdownTable = ({
   </section>
 );
 
-const tabButtonClass = (isActive: boolean): string =>
-  [
-    "rounded-xl px-3 py-2 text-sm font-medium transition",
-    isActive
-      ? "border border-primary-200 bg-primary-100 text-primary-700"
-      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-  ].join(" ");
+type FilterFieldProps = {
+  icon: LucideIcon;
+  children: ReactNode;
+};
+
+const FilterField = ({ icon: Icon, children }: FilterFieldProps) => (
+  <div className="grid min-w-[13rem] grid-cols-[auto,1fr] rounded-xl border border-slate-300 bg-white transition focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100">
+    <div className="inline-flex h-[42px] items-center rounded-l-xl border-r border-slate-200 bg-slate-50 px-3 text-primary-600">
+      <Icon className="h-4 w-4" aria-hidden="true" />
+    </div>
+    <div className="min-w-0 flex-1">{children}</div>
+  </div>
+);
 
 export const StatementsPage = () => {
   const { accessToken, user } = useAuthSession();
@@ -111,20 +146,20 @@ export const StatementsPage = () => {
       style: "currency",
       currency: user?.currency ?? "USD",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   }, [user?.currency]);
 
   const incomeStatementQuery = useQuery({
     queryKey: ["reports", "income-statement", selectedMonth],
     enabled: Boolean(accessToken) && activeTab === "income-statement",
-    queryFn: () => getIncomeStatement(accessToken as string, { month: selectedMonth })
+    queryFn: () => getIncomeStatement(accessToken as string, { month: selectedMonth }),
   });
 
   const balanceSheetQuery = useQuery({
     queryKey: ["reports", "balance-sheet", asOfDate],
     enabled: Boolean(accessToken) && activeTab === "balance-sheet",
-    queryFn: () => getBalanceSheet(accessToken as string, { asOf: asOfDate })
+    queryFn: () => getBalanceSheet(accessToken as string, { asOf: asOfDate }),
   });
 
   const incomeStatement = incomeStatementQuery.data?.statement;
@@ -158,69 +193,59 @@ export const StatementsPage = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Financial statements</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-xl font-semibold text-slate-900">Financial statements</h2>
+            <p className="mt-1 text-base text-slate-600">
               Review performance by month and your simplified balance sheet as of a specific date.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("income-statement")}
-                className={tabButtonClass(activeTab === "income-statement")}
-              >
-                Income Statement
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("balance-sheet")}
-                className={tabButtonClass(activeTab === "balance-sheet")}
-              >
-                Balance Sheet
-              </button>
-            </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <FilterField icon={FileSpreadsheet}>
+              <SelectMenuField
+                ariaLabel="Select statement type"
+                value={activeTab}
+                onChange={(nextValue) => setActiveTab(nextValue as StatementsTab)}
+                options={statementsTabOptions}
+                variant="plain"
+                menuClassName="left-0 right-0"
+              />
+            </FilterField>
 
             {activeTab === "income-statement" ? (
-              <label className="block min-w-40">
-                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Month</span>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(event) => setSelectedMonth(event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </label>
+              <MonthPickerField
+                value={selectedMonth}
+                onChange={setSelectedMonth}
+                icon={CalendarDays}
+                ariaLabel="Select income statement month"
+              />
             ) : (
-              <label className="block min-w-40">
-                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">As of date</span>
-                <input
-                  type="date"
-                  value={asOfDate}
-                  onChange={(event) => setAsOfDate(event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </label>
+              <DatePickerField
+                value={asOfDate}
+                onChange={setAsOfDate}
+                icon={Calendar}
+                ariaLabel="Select balance sheet date"
+              />
             )}
           </div>
         </div>
       </section>
 
-      <section className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/70 px-4 py-3 text-sm text-primary-800">
+      <section className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/70 px-4 py-3 text-base text-primary-800">
         {activeTab === "income-statement" ? (
           <p>
-            Income Statement shows monthly income and expenses; net income is the difference between the two totals.
+            Income Statement shows monthly income and expenses; net income is the difference between
+            the two totals.
           </p>
         ) : (
           <p>
-            Balance Sheet shows assets as of a date; equity uses cumulative net income up to that date for MVP.
+            Balance Sheet shows assets as of a date; equity uses cumulative net income up to that
+            date for MVP.
           </p>
         )}
       </section>
 
       {errorMessage ? (
-        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span>{errorMessage}</span>
             <button
@@ -232,7 +257,7 @@ export const StatementsPage = () => {
                   void balanceSheetQuery.refetch();
                 }
               }}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
             >
               Retry
             </button>
@@ -244,13 +269,13 @@ export const StatementsPage = () => {
 
       {!isInitialLoading && activeTab === "income-statement" && hasNoIncomeData ? (
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <h3 className="text-base font-semibold text-slate-900">No income statement data yet</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-900">No income statement data yet</h3>
+          <p className="mt-2 text-base text-slate-600">
             Add transactions for {selectedMonth} to generate your monthly statement.
           </p>
           <Link
             to="/app/transactions"
-            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white hover:bg-primary-700"
           >
             Add first transaction
           </Link>
@@ -259,36 +284,42 @@ export const StatementsPage = () => {
 
       {!isInitialLoading && activeTab === "balance-sheet" && hasNoBalanceData ? (
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <h3 className="text-base font-semibold text-slate-900">No balance sheet data yet</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <h3 className="text-lg font-semibold text-slate-900">No balance sheet data yet</h3>
+          <p className="mt-2 text-base text-slate-600">
             Create an account and add transactions to compute assets and equity.
           </p>
           <Link
             to="/app/transactions"
-            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            className="mt-5 inline-flex rounded-xl bg-primary-600 px-4 py-2.5 text-base font-medium text-white hover:bg-primary-700"
           >
             Add first transaction
           </Link>
         </section>
       ) : null}
 
-      {!isInitialLoading && activeTab === "income-statement" && !hasNoIncomeData && incomeStatement ? (
+      {!isInitialLoading &&
+      activeTab === "income-statement" &&
+      !hasNoIncomeData &&
+      incomeStatement ? (
         <section className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <MetricCard
               label="Total income"
               value={formatMoneyString(currencyFormatter, incomeStatement.totalIncome)}
               subtitle="All income categories in selected month"
+              tone="income"
             />
             <MetricCard
               label="Total expenses"
               value={formatMoneyString(currencyFormatter, incomeStatement.totalExpenses)}
               subtitle="All expense categories in selected month"
+              tone="expense"
             />
             <MetricCard
               label="Net income"
               value={formatMoneyString(currencyFormatter, incomeStatement.netIncome)}
               subtitle="Monthly performance (income - expenses)"
+              tone="net"
             />
           </div>
 
@@ -316,26 +347,31 @@ export const StatementsPage = () => {
               label="Total assets"
               value={formatMoneyString(currencyFormatter, balanceSheet.totalAssets)}
               subtitle="Sum of all account balances as of selected date"
+              tone="asset"
             />
             <MetricCard
               label="Equity"
               value={formatMoneyString(currencyFormatter, balanceSheet.equity)}
               subtitle="Cumulative net income to date (MVP)"
+              tone="equity"
             />
           </div>
 
-          <section className="rounded-2xl border border-sage-100 bg-sage-100/50 px-4 py-3 text-sm text-emerald-900">
+          <section className="rounded-2xl border border-sage-100 bg-sage-100/50 px-4 py-3 text-base text-emerald-900">
             <p>
-              Simplified equation check: <strong>Assets = Equity</strong>. Liabilities are omitted in MVP.
+              Simplified equation check: <strong>Assets = Equity</strong>. Liabilities are omitted
+              in MVP.
             </p>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-slate-900">Asset balances</h3>
-            <p className="mt-1 text-xs text-slate-600">Per-account balances as of {balanceSheet.asOf}.</p>
+            <h3 className="text-base font-semibold text-slate-900">Asset balances</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Per-account balances as of {balanceSheet.asOf}.
+            </p>
 
             {balanceSheet.assets.length === 0 ? (
-              <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-600">
                 No accounts found for this user.
               </p>
             ) : (
@@ -343,15 +379,19 @@ export const StatementsPage = () => {
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Account</th>
-                      <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Balance</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium uppercase tracking-wide text-slate-500">
+                        Account
+                      </th>
+                      <th className="px-3 py-2 text-right text-sm font-medium uppercase tracking-wide text-slate-500">
+                        Balance
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {balanceSheet.assets.map((asset) => (
                       <tr key={asset.accountId}>
-                        <td className="px-3 py-2 text-sm text-slate-700">{asset.accountName}</td>
-                        <td className="px-3 py-2 text-right text-sm font-medium text-slate-900">
+                        <td className="px-3 py-2 text-base text-slate-700">{asset.accountName}</td>
+                        <td className="px-3 py-2 text-right text-base font-medium text-slate-900">
                           {formatMoneyString(currencyFormatter, asset.balance)}
                         </td>
                       </tr>
@@ -361,7 +401,7 @@ export const StatementsPage = () => {
               </div>
             )}
 
-            <p className="mt-4 text-xs text-slate-500">
+            <p className="mt-4 text-sm text-slate-500">
               Equity definition: <code>{balanceSheet.equityDefinition}</code>
             </p>
           </section>

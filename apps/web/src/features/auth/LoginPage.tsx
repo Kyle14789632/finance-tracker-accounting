@@ -4,6 +4,7 @@ import type { LoginRequest } from "@sft/shared";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
+import { BrandLogo } from "../../components/branding/BrandLogo";
 import { login } from "./api";
 import { useAuthSession } from "./auth-session-context";
 import { applyServerFormErrors } from "./form-errors";
@@ -42,7 +43,7 @@ export const LoginPage = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">Student Finance Tracker</p>
+        <BrandLogo variant="full" size="md" />
         <h1 className="mt-3 text-2xl font-semibold text-slate-900">Welcome back</h1>
         <p className="mt-2 text-sm text-slate-600">Sign in to continue tracking your finances.</p>
 
