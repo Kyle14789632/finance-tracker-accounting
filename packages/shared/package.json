@@ -1,0 +1,18 @@
+{
+  "name": "@sft/shared",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint --max-warnings=0 \"src/**/*.ts\"",
+    "test": "echo \"test placeholder (@sft/shared)\""
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "student-finance-tracker",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel --filter=@sft/api --filter=@sft/web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "turbo run test",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate -w @sft/api",
+    "db:seed": "npm run prisma:seed -w @sft/api",
+    "db:studio": "npm run prisma:studio -w @sft/api",
+    "docker:config": "docker compose --env-file .env.docker config",
+    "docker:build": "docker compose --env-file .env.docker build api web",
+    "docker:build:clean": "docker compose --env-file .env.docker build --no-cache",
+    "docker:up": "docker compose --env-file .env.docker up -d",
+    "docker:up:build": "docker compose --env-file .env.docker up --build -d",
+    "docker:ps": "docker compose --env-file .env.docker ps",
+    "docker:logs": "docker compose --env-file .env.docker logs -f postgres migrate api web",
+    "docker:down": "docker compose --env-file .env.docker down",
+    "docker:down:volumes": "docker compose --env-file .env.docker down -v",
+    "prepare": "husky || exit 0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,cjs,mjs,json,md,css,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.1",
+    "turbo": "^2.5.6",
+    "typescript": "^5.8.2"
+  }
+}

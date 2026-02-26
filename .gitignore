@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+.turbo
+.DS_Store
+npm-debug.log*
+.env
+.env.*
+!.env.example
+!**/.env.example
+!.env.docker.example
+apps/api/prisma/generated

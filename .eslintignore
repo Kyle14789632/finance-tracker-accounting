@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+.turbo
+coverage
+apps/web/dist
+apps/api/dist
+apps/api/prisma/generated
+packages/shared/dist
