@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Account, AccountType, CreateAccountRequest } from "@sft/shared";
-import { Archive, Landmark, Loader2, Pencil, type LucideIcon } from "lucide-react";
+import { Archive, Landmark, Loader2, Pencil, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UseFormSetError } from "react-hook-form";
 import { Controller, useForm } from "react-hook-form";
 import { SelectMenuField, type SelectMenuOption } from "../../components/ui/SelectMenuField";
@@ -81,6 +81,12 @@ const AccountModal = ({
   onClose,
   onSubmit,
 }: AccountModalProps) => {
+  const requestClose = useCallback(() => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  }, [isSubmitting, onClose]);
+
   const {
     control,
     register,
@@ -107,6 +113,24 @@ const AccountModal = ({
     });
   }, [account, isOpen, reset]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        requestClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, requestClose]);
+
   if (!isOpen) {
     return null;
   }
@@ -115,22 +139,36 @@ const AccountModal = ({
   const submitLabel = account ? "Save changes" : "Create account";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6">
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8"
+      onClick={requestClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-modal-title"
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            <h2 id="account-modal-title" className="text-xl font-semibold text-slate-900">
+              {title}
+            </h2>
             <p className="mt-1 text-base text-slate-600">
               Track where your money sits: cash, bank, or savings.
             </p>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close account modal"
+            title="Close"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Close
+            <X className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Close account modal</span>
           </button>
         </div>
 
@@ -194,6 +232,126 @@ const AccountModal = ({
   );
 };
 
+type ArchiveAccountModalProps = {
+  isOpen: boolean;
+  isSubmitting: boolean;
+  accountName: string;
+  accountType: string;
+  errorMessage: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+const ArchiveAccountModal = ({
+  isOpen,
+  isSubmitting,
+  accountName,
+  accountType,
+  errorMessage,
+  onCancel,
+  onConfirm,
+}: ArchiveAccountModalProps) => {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) {
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, isSubmitting, onCancel]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8"
+      onClick={() => {
+        if (!isSubmitting) {
+          onCancel();
+        }
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="archive-account-title"
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="archive-account-title" className="text-xl font-semibold text-slate-900">
+              Archive account
+            </h2>
+            <p className="mt-1 text-base text-slate-600">
+              Archived accounts are hidden from active account lists.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            aria-label="Close archive account confirmation"
+            title="Close"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Close archive account confirmation</span>
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-base font-medium text-slate-900">{accountName}</p>
+          <p className="mt-1 text-sm text-slate-600">{accountType}</p>
+        </div>
+
+        {errorMessage ? (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-base text-rose-700">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                Archiving...
+              </>
+            ) : (
+              "Archive"
+            )}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+};
+
 const AccountsLoadingState = () => (
   <section className="rounded-2xl border border-slate-200 bg-white p-5">
     <div className="space-y-3">
@@ -229,6 +387,8 @@ export const AccountsPage = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [accountToArchive, setAccountToArchive] = useState<Account | null>(null);
+  const [archiveModalError, setArchiveModalError] = useState<string | null>(null);
   const [archivePendingId, setArchivePendingId] = useState<string | null>(null);
 
   const accountsQuery = useQuery({
@@ -268,6 +428,9 @@ export const AccountsPage = () => {
     [accountsQuery.data?.accounts],
   );
   const isModalSubmitting = createAccountMutation.isPending || updateAccountMutation.isPending;
+  const isArchiveSubmitting =
+    archiveAccountMutation.isPending && archivePendingId === accountToArchive?.id;
+  const archiveAccountType = accountToArchive ? accountTypeLabel[accountToArchive.type] : "";
 
   const openAddModal = () => {
     setEditingAccount(null);
@@ -289,6 +452,20 @@ export const AccountsPage = () => {
     setIsModalOpen(false);
     setEditingAccount(null);
     setModalError(null);
+  };
+
+  const openArchiveModal = (account: Account) => {
+    setAccountToArchive(account);
+    setArchiveModalError(null);
+  };
+
+  const closeArchiveModal = () => {
+    if (isArchiveSubmitting) {
+      return;
+    }
+
+    setAccountToArchive(null);
+    setArchiveModalError(null);
   };
 
   const handleModalSubmit = async (
@@ -319,27 +496,25 @@ export const AccountsPage = () => {
     }
   };
 
-  const handleArchive = async (account: Account) => {
-    if (!accessToken) {
-      setPageError("Your session expired. Please sign in again.");
+  const handleArchive = async () => {
+    if (!accountToArchive) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Archive "${account.name}"? It will be hidden from active account lists.`,
-    );
-
-    if (!confirmed) {
+    if (!accessToken) {
+      setArchiveModalError("Your session expired. Please sign in again.");
       return;
     }
 
     setPageError(null);
-    setArchivePendingId(account.id);
+    setArchiveModalError(null);
+    setArchivePendingId(accountToArchive.id);
 
     try {
-      await archiveAccountMutation.mutateAsync(account.id);
+      await archiveAccountMutation.mutateAsync(accountToArchive.id);
+      closeArchiveModal();
     } catch (error) {
-      setPageError(getApiErrorMessage(error, "Failed to archive account."));
+      setArchiveModalError(getApiErrorMessage(error, "Failed to archive account."));
     } finally {
       setArchivePendingId(null);
     }
@@ -474,7 +649,7 @@ export const AccountsPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void handleArchive(account)}
+                        onClick={() => openArchiveModal(account)}
                         disabled={isArchivingCurrent}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label={`Archive ${account.name}`}
@@ -505,6 +680,17 @@ export const AccountsPage = () => {
         errorMessage={modalError}
         onClose={closeModal}
         onSubmit={handleModalSubmit}
+      />
+      <ArchiveAccountModal
+        isOpen={Boolean(accountToArchive)}
+        isSubmitting={isArchiveSubmitting}
+        accountName={accountToArchive?.name ?? ""}
+        accountType={archiveAccountType}
+        errorMessage={archiveModalError}
+        onCancel={closeArchiveModal}
+        onConfirm={() => {
+          void handleArchive();
+        }}
       />
     </>
   );

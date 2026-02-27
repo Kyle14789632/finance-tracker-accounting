@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Category, CategoryType, CreateCategoryRequest } from "@sft/shared";
-import { Archive, Loader2, Pencil, Tags, type LucideIcon } from "lucide-react";
+import { Archive, Loader2, Pencil, Tags, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UseFormSetError } from "react-hook-form";
 import { Controller, useForm } from "react-hook-form";
 import { SelectMenuField, type SelectMenuOption } from "../../components/ui/SelectMenuField";
@@ -70,6 +70,12 @@ const CategoryModal = ({
   onClose,
   onSubmit,
 }: CategoryModalProps) => {
+  const requestClose = useCallback(() => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  }, [isSubmitting, onClose]);
+
   const {
     control,
     register,
@@ -96,6 +102,24 @@ const CategoryModal = ({
     });
   }, [category, isOpen, reset]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        requestClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, requestClose]);
+
   if (!isOpen) {
     return null;
   }
@@ -104,22 +128,36 @@ const CategoryModal = ({
   const submitLabel = category ? "Save changes" : "Create category";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6">
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8"
+      onClick={requestClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="category-modal-title"
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            <h2 id="category-modal-title" className="text-xl font-semibold text-slate-900">
+              {title}
+            </h2>
             <p className="mt-1 text-base text-slate-600">
               Use this category in your transactions module.
             </p>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close category modal"
+            title="Close"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Close
+            <X className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Close category modal</span>
           </button>
         </div>
 
@@ -183,6 +221,126 @@ const CategoryModal = ({
   );
 };
 
+type ArchiveCategoryModalProps = {
+  isOpen: boolean;
+  isSubmitting: boolean;
+  categoryName: string;
+  categoryType: string;
+  errorMessage: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+const ArchiveCategoryModal = ({
+  isOpen,
+  isSubmitting,
+  categoryName,
+  categoryType,
+  errorMessage,
+  onCancel,
+  onConfirm,
+}: ArchiveCategoryModalProps) => {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) {
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, isSubmitting, onCancel]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 px-4 py-8"
+      onClick={() => {
+        if (!isSubmitting) {
+          onCancel();
+        }
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="archive-category-title"
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="archive-category-title" className="text-xl font-semibold text-slate-900">
+              Archive category
+            </h2>
+            <p className="mt-1 text-base text-slate-600">
+              Archived categories can no longer be used for new transactions.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            aria-label="Close archive category confirmation"
+            title="Close"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Close archive category confirmation</span>
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-base font-medium text-slate-900">{categoryName}</p>
+          <p className="mt-1 text-sm text-slate-600">{categoryType}</p>
+        </div>
+
+        {errorMessage ? (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-base text-rose-700">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                Archiving...
+              </>
+            ) : (
+              "Archive"
+            )}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+};
+
 const CategoriesLoadingState = () => (
   <section className="rounded-2xl border border-slate-200 bg-white p-5">
     <div className="space-y-3">
@@ -218,6 +376,8 @@ export const CategoriesPage = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [categoryToArchive, setCategoryToArchive] = useState<Category | null>(null);
+  const [archiveModalError, setArchiveModalError] = useState<string | null>(null);
   const [archivePendingId, setArchivePendingId] = useState<string | null>(null);
 
   const categoriesQuery = useQuery({
@@ -257,6 +417,9 @@ export const CategoriesPage = () => {
     [categoriesQuery.data?.categories],
   );
   const isModalSubmitting = createCategoryMutation.isPending || updateCategoryMutation.isPending;
+  const isArchiveSubmitting =
+    archiveCategoryMutation.isPending && archivePendingId === categoryToArchive?.id;
+  const archiveCategoryType = categoryToArchive ? categoryTypeLabel[categoryToArchive.type] : "";
 
   const openAddModal = () => {
     setEditingCategory(null);
@@ -278,6 +441,20 @@ export const CategoriesPage = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setModalError(null);
+  };
+
+  const openArchiveModal = (category: Category) => {
+    setCategoryToArchive(category);
+    setArchiveModalError(null);
+  };
+
+  const closeArchiveModal = () => {
+    if (isArchiveSubmitting) {
+      return;
+    }
+
+    setCategoryToArchive(null);
+    setArchiveModalError(null);
   };
 
   const handleModalSubmit = async (
@@ -308,27 +485,25 @@ export const CategoriesPage = () => {
     }
   };
 
-  const handleArchive = async (category: Category) => {
-    if (!accessToken) {
-      setPageError("Your session expired. Please sign in again.");
+  const handleArchive = async () => {
+    if (!categoryToArchive) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Archive "${category.name}"? You can no longer use it for new transactions.`,
-    );
-
-    if (!confirmed) {
+    if (!accessToken) {
+      setArchiveModalError("Your session expired. Please sign in again.");
       return;
     }
 
     setPageError(null);
-    setArchivePendingId(category.id);
+    setArchiveModalError(null);
+    setArchivePendingId(categoryToArchive.id);
 
     try {
-      await archiveCategoryMutation.mutateAsync(category.id);
+      await archiveCategoryMutation.mutateAsync(categoryToArchive.id);
+      closeArchiveModal();
     } catch (error) {
-      setPageError(getApiErrorMessage(error, "Failed to archive category."));
+      setArchiveModalError(getApiErrorMessage(error, "Failed to archive category."));
     } finally {
       setArchivePendingId(null);
     }
@@ -458,7 +633,7 @@ export const CategoriesPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void handleArchive(category)}
+                        onClick={() => openArchiveModal(category)}
                         disabled={isArchivingCurrent}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label={`Archive ${category.name}`}
@@ -489,6 +664,17 @@ export const CategoriesPage = () => {
         errorMessage={modalError}
         onClose={closeModal}
         onSubmit={handleModalSubmit}
+      />
+      <ArchiveCategoryModal
+        isOpen={Boolean(categoryToArchive)}
+        isSubmitting={isArchiveSubmitting}
+        categoryName={categoryToArchive?.name ?? ""}
+        categoryType={archiveCategoryType}
+        errorMessage={archiveModalError}
+        onCancel={closeArchiveModal}
+        onConfirm={() => {
+          void handleArchive();
+        }}
       />
     </>
   );

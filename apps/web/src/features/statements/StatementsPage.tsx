@@ -230,20 +230,6 @@ export const StatementsPage = () => {
         </div>
       </section>
 
-      <section className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/70 px-4 py-3 text-base text-primary-800">
-        {activeTab === "income-statement" ? (
-          <p>
-            Income Statement shows monthly income and expenses; net income is the difference between
-            the two totals.
-          </p>
-        ) : (
-          <p>
-            Balance Sheet shows assets as of a date; equity uses cumulative net income up to that
-            date for MVP.
-          </p>
-        )}
-      </section>
-
       {errorMessage ? (
         <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -352,17 +338,10 @@ export const StatementsPage = () => {
             <MetricCard
               label="Equity"
               value={formatMoneyString(currencyFormatter, balanceSheet.equity)}
-              subtitle="Cumulative net income to date (MVP)"
+              subtitle="Cumulative net income to date"
               tone="equity"
             />
           </div>
-
-          <section className="rounded-2xl border border-sage-100 bg-sage-100/50 px-4 py-3 text-base text-emerald-900">
-            <p>
-              Simplified equation check: <strong>Assets = Equity</strong>. Liabilities are omitted
-              in MVP.
-            </p>
-          </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h3 className="text-base font-semibold text-slate-900">Asset balances</h3>
@@ -400,10 +379,6 @@ export const StatementsPage = () => {
                 </table>
               </div>
             )}
-
-            <p className="mt-4 text-sm text-slate-500">
-              Equity definition: <code>{balanceSheet.equityDefinition}</code>
-            </p>
           </section>
         </section>
       ) : null}
