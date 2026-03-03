@@ -7,7 +7,7 @@ import { appNavItems } from "./navItems";
 
 const getPageTitle = (pathname: string) => {
   const activeItem = appNavItems.find((item) => pathname.startsWith(item.path));
-  return activeItem ? activeItem.label : "Student Finance Tracker";
+  return activeItem ? activeItem.label : "FlowLedger";
 };
 
 export const AppShell = () => {

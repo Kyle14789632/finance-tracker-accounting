@@ -14,11 +14,14 @@ const SALT_ROUNDS = 12;
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
+const toSupportedCurrency = (currency: string): PublicUser["currency"] =>
+  currency === "USD" ? "USD" : "PHP";
+
 const toPublicUser = (user: User): PublicUser => ({
   id: user.id,
   email: user.email,
   name: user.name,
-  currency: user.currency,
+  currency: toSupportedCurrency(user.currency),
   learningModeEnabled: user.learningModeEnabled,
   createdAt: user.createdAt.toISOString(),
   updatedAt: user.updatedAt.toISOString()
@@ -54,7 +57,7 @@ const register = async (payload: RegisterRequest): Promise<AuthResult> => {
       email,
       passwordHash,
       name: payload.name ?? null,
-      currency: payload.currency ?? "USD"
+      currency: payload.currency ?? "PHP"
     }
   });
 
@@ -108,7 +111,10 @@ const updateAuthenticatedUserSettings = async (
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
-      learningModeEnabled: payload.learningModeEnabled
+      ...(payload.learningModeEnabled !== undefined
+        ? { learningModeEnabled: payload.learningModeEnabled }
+        : {}),
+      ...(payload.name !== undefined ? { name: payload.name } : {})
     }
   });
 

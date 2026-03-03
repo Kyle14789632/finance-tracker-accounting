@@ -26,7 +26,7 @@ Before running payloads in this file:
 
 1. Run DB and API locally (`npm run db:up`, `npm run db:migrate`, `npm run db:seed`, `npm run dev`).
 2. Log in with seeded credentials:
-   - `email`: `demo@studentfinance.dev`
+   - `email`: `demo@flowledger.dev`
    - `password`: `DemoPass123!`
 3. Copy the returned `accessToken` from `POST /auth/login` into your API client auth header.
 
@@ -38,10 +38,10 @@ Request body:
 
 ```json
 {
-  "email": "student@example.com",
+  "email": "user@example.com",
   "password": "StrongPass123!",
-  "name": "Student User",
-  "currency": "USD"
+  "name": "Demo User",
+  "currency": "PHP"
 }
 ```
 
@@ -51,9 +51,9 @@ Expected success response:
 {
   "user": {
     "id": "uuid",
-    "email": "student@example.com",
-    "name": "Student User",
-    "currency": "USD",
+    "email": "user@example.com",
+    "name": "Demo User",
+    "currency": "PHP",
     "learningModeEnabled": false,
     "createdAt": "2026-02-18T06:00:00.000Z",
     "updatedAt": "2026-02-18T06:00:00.000Z"
@@ -71,6 +71,8 @@ Validation tests:
 - invalid email format
 - password too short
 - missing required fields
+- invalid `currency` value (only `PHP` and `USD` are allowed)
+- omit `currency` and verify default is `PHP`
 - duplicate email
 
 ### POST /auth/login
@@ -79,7 +81,7 @@ Request body:
 
 ```json
 {
-  "email": "student@example.com",
+  "email": "user@example.com",
   "password": "StrongPass123!"
 }
 ```
@@ -90,9 +92,9 @@ Expected success response:
 {
   "user": {
     "id": "uuid",
-    "email": "student@example.com",
-    "name": "Student User",
-    "currency": "USD",
+    "email": "user@example.com",
+    "name": "Demo User",
+    "currency": "PHP",
     "learningModeEnabled": false,
     "createdAt": "2026-02-18T06:00:00.000Z",
     "updatedAt": "2026-02-18T06:00:00.000Z"
@@ -138,9 +140,9 @@ Expected success response (200):
 {
   "user": {
     "id": "uuid",
-    "email": "student@example.com",
-    "name": "Student User",
-    "currency": "USD",
+    "email": "user@example.com",
+    "name": "Demo User",
+    "currency": "PHP",
     "learningModeEnabled": false,
     "createdAt": "2026-02-18T06:00:00.000Z",
     "updatedAt": "2026-02-18T06:00:00.000Z"
@@ -687,7 +689,7 @@ Authorization tests:
 - missing bearer token
 - invalid bearer token
 
-## 8) Settings route
+## 8) Settings route (Show journal + profile)
 
 ### PATCH /me/settings
 
@@ -695,7 +697,8 @@ Request body:
 
 ```json
 {
-  "learningModeEnabled": true
+  "learningModeEnabled": true,
+  "name": "New Display Name"
 }
 ```
 
@@ -705,9 +708,9 @@ Expected success response (200):
 {
   "user": {
     "id": "uuid",
-    "email": "student@example.com",
-    "name": "Student User",
-    "currency": "USD",
+    "email": "user@example.com",
+    "name": "New Display Name",
+    "currency": "PHP",
     "learningModeEnabled": true,
     "createdAt": "2026-02-18T06:00:00.000Z",
     "updatedAt": "2026-02-20T14:30:00.000Z"
@@ -718,7 +721,8 @@ Expected success response (200):
 Validation tests:
 
 - non-boolean `learningModeEnabled`
-- missing body
+- invalid `name` (empty or more than 100 chars)
+- missing body / empty object
 
 Authorization tests:
 
@@ -727,8 +731,9 @@ Authorization tests:
 
 Success check:
 
-- call `PATCH /me/settings` with `learningModeEnabled=true`
-- call `GET /me` and verify `user.learningModeEnabled === true`
+- call `PATCH /me/settings` with `learningModeEnabled=true` and verify `user.learningModeEnabled === true`
+- call `PATCH /me/settings` with `name="New Display Name"` and verify `user.name` changed
+- call `PATCH /me/settings` with both fields and verify both updates persist in `GET /me`
 
 ## 9) Manual regression checklist
 

@@ -46,7 +46,7 @@ model User {
   email               String   @unique
   passwordHash        String
   name                String?
-  currency            String   @default("USD")
+  currency            String   @default("PHP")
   learningModeEnabled Boolean  @default(false)
   accounts            Account[]
   categories          Category[]

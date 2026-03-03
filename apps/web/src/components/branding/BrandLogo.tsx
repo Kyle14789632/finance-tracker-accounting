@@ -72,7 +72,7 @@ export const BrandLogo = ({ variant = "full", size = "md", className }: BrandLog
     return (
       <span className={joinClassNames("inline-flex items-center justify-center", className)}>
         <BrandMark size={size} />
-        <span className="sr-only">Student Finance Tracker</span>
+        <span className="sr-only">FlowLedger</span>
       </span>
     );
   }
@@ -87,10 +87,10 @@ export const BrandLogo = ({ variant = "full", size = "md", className }: BrandLog
             textSizeClass[size],
           )}
         >
-          Student Finance
+          Flow
         </span>
         <span className={joinClassNames("block font-semibold text-slate-800", titleSizeClass[size])}>
-          Tracker
+          Ledger
         </span>
       </span>
     </span>

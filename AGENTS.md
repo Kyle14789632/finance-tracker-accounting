@@ -1,10 +1,10 @@
-# AGENTS.md — Engineering Guidelines for Student Finance Tracker (MVP)
+# AGENTS.md — Engineering Guidelines for FlowLedger (MVP)
 
 > Purpose: Give coding agents (Codex) a single source of truth for architecture, conventions, and delivery flow.
 
 ## 0) Project snapshot
 
-- Product: Student finance tracker + basic accounting learning mode
+- Product: Personal finance tracker + optional journal visibility
 - Scope: MVP only (no AI in MVP)
 - Dev workflow: backend-first per module (manual API-client testing), then frontend + integration, then repeat
 - Stack:
@@ -26,7 +26,7 @@
 - Simple charts only (pie + bar/line): minimal clutter, clear labels/legend, tooltips.
 - Friendly outline icons (single icon set), plenty of whitespace, readable hierarchy.
 - Consistent states: skeleton loading; friendly empty state + 1 CTA; calm error banner + retry.
-- Learning Mode: OFF = normal tracker; ON = expandable journal (Debit/Credit) + 1–2 sentence explanation.
+- Show Journal: OFF = normal tracker; ON = expandable journal (Debit/Credit) + 1–2 sentence explanation.
 
 ## 1) Monorepo structure
 
@@ -197,7 +197,7 @@ Invariant:
 - On transaction update: recompute journal entries.
 - On transaction delete: delete (or cascade) journal entries.
 
-### 6.3 Learning Mode
+### 6.3 Show Journal
 
 When learningModeEnabled:
 
@@ -282,7 +282,7 @@ Automated tests are optional during MVP and can be added in hardening.
 5. Journal entries (accounting engine)
 6. Dashboard reports
 7. Statements
-8. Settings (learning mode toggle)
+8. Settings (show journal toggle + profile)
 
 Do not reorder unless dependencies are handled.
 

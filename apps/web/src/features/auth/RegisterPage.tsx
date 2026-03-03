@@ -23,7 +23,7 @@ export const RegisterPage = () => {
   } = useForm<RegisterRequest>({
     resolver: zodResolver(registerRequestSchema),
     defaultValues: {
-      currency: "USD"
+      currency: "PHP"
     }
   });
 
@@ -90,13 +90,13 @@ export const RegisterPage = () => {
 
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Currency</span>
-            <input
-              type="text"
-              autoComplete="off"
-              maxLength={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm uppercase outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+            <select
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               {...register("currency")}
-            />
+            >
+              <option value="PHP">PHP</option>
+              <option value="USD">USD</option>
+            </select>
             {errors.currency ? <span className="mt-1 block text-xs text-rose-600">{errors.currency.message}</span> : null}
           </label>
 

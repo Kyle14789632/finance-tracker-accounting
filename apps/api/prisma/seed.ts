@@ -5,22 +5,22 @@ const prisma = new PrismaClient();
 const SALT_ROUNDS = 12;
 
 const DEMO_USER = {
-  email: "demo@studentfinance.dev",
+  email: "demo@flowledger.dev",
   password: "DemoPass123!",
-  name: "Demo Student",
-  currency: "USD",
+  name: "Demo User",
+  currency: "PHP",
   learningModeEnabled: false,
 } as const;
 
 const DEMO_ACCOUNTS = [
   {
     id: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
-    name: "Campus Wallet",
+    name: "Cash Wallet",
     type: "CASH",
   },
   {
     id: "1b921475-964f-45ec-8bf3-9d125a17f2e4",
-    name: "Student Checking",
+    name: "Main Checking",
     type: "BANK",
   },
   {
@@ -33,7 +33,7 @@ const DEMO_ACCOUNTS = [
 const DEMO_CATEGORIES = [
   {
     id: "6855c0e9-d3ad-4100-99ef-e4efb5f7f5f2",
-    name: "Scholarship",
+    name: "Salary",
     type: "INCOME",
   },
   {
@@ -68,7 +68,7 @@ const DEMO_CATEGORIES = [
   },
   {
     id: "821ee719-c91f-454d-9072-9f2ff1cc95d2",
-    name: "Study Materials",
+    name: "Education",
     type: "EXPENSE",
   },
 ] as const;
@@ -136,7 +136,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "INCOME",
       amount: "1200.00",
       occurredAt: createUtcDate(currentYear, currentMonthIndex, 2, 9, 0),
-      note: "Scholarship stipend",
+      note: "Salary payout",
     },
     {
       accountId: "1b921475-964f-45ec-8bf3-9d125a17f2e4",
@@ -144,7 +144,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "INCOME",
       amount: "480.00",
       occurredAt: createUtcDate(currentYear, currentMonthIndex, 8, 18, 30),
-      note: "Part-time campus shift",
+      note: "Part-time shift",
     },
     {
       accountId: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
@@ -160,7 +160,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "EXPENSE",
       amount: "550.00",
       occurredAt: createUtcDate(currentYear, currentMonthIndex, 3, 8, 0),
-      note: "Dorm rent payment",
+      note: "Monthly rent payment",
     },
     {
       accountId: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
@@ -176,7 +176,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "EXPENSE",
       amount: "68.00",
       occurredAt: createUtcDate(currentYear, currentMonthIndex, 11, 7, 45),
-      note: "Bus and train fares",
+      note: "Bus and train commute",
     },
     {
       accountId: "1b921475-964f-45ec-8bf3-9d125a17f2e4",
@@ -192,7 +192,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "INCOME",
       amount: "600.00",
       occurredAt: createUtcDate(previousYear, previousMonthIndex, 2, 9, 0),
-      note: "Family allowance",
+      note: "Allowance transfer",
     },
     {
       accountId: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
@@ -200,7 +200,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "INCOME",
       amount: "350.00",
       occurredAt: createUtcDate(previousYear, previousMonthIndex, 12, 17, 0),
-      note: "Tutoring session income",
+      note: "Consulting session income",
     },
     {
       accountId: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
@@ -208,7 +208,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "EXPENSE",
       amount: "130.00",
       occurredAt: createUtcDate(previousYear, previousMonthIndex, 5, 13, 30),
-      note: "Meal plan top-up",
+      note: "Groceries refill",
     },
     {
       accountId: "7f08d17a-26af-4f62-bf7d-e5804f65c18b",
@@ -224,7 +224,7 @@ const buildDemoTransactions = (): SeedTransaction[] => {
       type: "EXPENSE",
       amount: "96.00",
       occurredAt: createUtcDate(previousYear, previousMonthIndex, 20, 16, 40),
-      note: "Books and printing",
+      note: "Books and office supplies",
     },
   ];
 };

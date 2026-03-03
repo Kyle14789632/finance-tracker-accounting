@@ -256,7 +256,7 @@
 ### 5.3 DoD
 
 - [x] All transactions have balanced journal entries
-- [x] Learning Mode can reveal journal reliably
+- [x] Show journal toggle can reveal journal reliably
 
 ---
 
@@ -318,20 +318,20 @@ Double-entry supports generating financial statements like balance sheet and inc
 
 ---
 
-## Module 8 â€” Settings + Learning Mode Toggle
+## Module 8 â€” Settings + Show Journal Toggle
 
 ### 8.0 Spec
 
-- [x] Store learningModeEnabled on User (recommended)
+- [x] Store learningModeEnabled on User (internal field for Show journal toggle)
 
 ### 8.1 Backend
 
-- [x] PATCH /me/settings { learningModeEnabled }
+- [x] PATCH /me/settings { learningModeEnabled, name? } (partial updates)
 - [x] GET /me includes setting
 
 ### 8.2 Frontend
 
-- [x] Settings page with toggle
+- [x] Settings page with Show journal toggle + editable name
 - [x] Toggle affects transaction UI (show/hide accounting section)
 
 ### 8.3 DoD

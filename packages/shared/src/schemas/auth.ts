@@ -18,11 +18,7 @@ const optionalNameSchema = z
   .max(100, "Name must be at most 100 characters")
   .optional();
 
-const currencySchema = z
-  .string()
-  .trim()
-  .regex(/^[A-Za-z]{3}$/, "Currency must be a 3-letter code")
-  .transform((value) => value.toUpperCase());
+const currencySchema = z.enum(["PHP", "USD"]);
 
 export const registerRequestSchema = z
   .object({
@@ -44,7 +40,7 @@ export const publicUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
   name: z.string().nullable(),
-  currency: z.string().regex(/^[A-Z]{3}$/),
+  currency: currencySchema,
   learningModeEnabled: z.boolean(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime()
@@ -61,9 +57,13 @@ export const meResponseSchema = z.object({
 
 export const updateMeSettingsRequestSchema = z
   .object({
-    learningModeEnabled: z.boolean()
+    learningModeEnabled: z.boolean().optional(),
+    name: optionalNameSchema
   })
-  .strict();
+  .strict()
+  .refine((payload) => payload.learningModeEnabled !== undefined || payload.name !== undefined, {
+    message: "At least one settings field must be provided"
+  });
 
 export const updateMeSettingsResponseSchema = z.object({
   user: publicUserSchema

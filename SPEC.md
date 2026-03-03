@@ -1,10 +1,10 @@
-# spec.md — Student Finance Tracker + Accounting Learning Web App (MVP)
+# spec.md — FlowLedger Finance Tracker (MVP)
 
 ## 1. Overview
 
 ### 1.1 Product summary
 
-A web app that helps users (primarily students) track income, expenses, and accounts while also learning basic accounting through an optional “Learning Mode” that reveals double-entry journal entries and simple explanations.
+A web app that helps users track income, expenses, and accounts, with an optional “Show journal” toggle that reveals double-entry journal entries and simple explanations.
 
 ### 1.2 Goals (MVP)
 
@@ -13,7 +13,7 @@ A web app that helps users (primarily students) track income, expenses, and acco
 - Provide basic financial statements:
   - Income Statement (Profit/Loss)
   - Balance Sheet (Assets & Equity simplified)
-- Include Learning Mode toggle:
+- Include Show journal toggle:
   - reveal journal entries
   - show simple accounting explanation per transaction
 
@@ -31,12 +31,12 @@ A web app that helps users (primarily students) track income, expenses, and acco
 
 ### 2.1 Primary persona
 
-- College students (non-accounting majors)
-- Wants simple tracking, helpful summaries, and learning without “accounting intimidation”
+- Individuals who want a simple personal finance tracker
+- Wants clear summaries and optional accounting visibility without complexity
 
 ### 2.2 Secondary persona
 
-- Any beginner who wants finance tracking + light accounting education
+- Beginners who want finance tracking + light accounting education
 
 ---
 
@@ -60,7 +60,7 @@ Every transaction creates at least 2 journal lines such that:
   - Assets = Equity (where Equity = cumulative Net Income)
     Double-entry bookkeeping is defined by recording each event in at least two accounts, keeping debits and credits equal. This provides consistency checks. (Reference: standard explanations) :contentReference[oaicite:2]{index=2}
 
-### 3.3 “Learning Mode”
+### 3.3 “Show journal”
 
 A user setting that toggles whether to display:
 
@@ -104,7 +104,7 @@ A user setting that toggles whether to display:
 - /accounts
 - /categories
 - /statements (Income Statement + Balance Sheet)
-- /settings (Learning Mode toggle)
+- /settings (Show journal toggle + profile name update)
 
 ---
 
@@ -118,7 +118,7 @@ A user setting that toggles whether to display:
 - email (unique)
 - passwordHash
 - name (optional)
-- currency (default “PHP” or configurable)
+- currency (default “PHP”; allowed values: `PHP | USD`)
 - learningModeEnabled (boolean)
 - createdAt / updatedAt
 
@@ -299,7 +299,7 @@ GET /reports/balance-sheet?asOf=YYYY-MM-DD (or month end)
   - list with filters (month/type/category/account)
   - add/edit modal or dedicated page
 
-### 8.2 Learning Mode behavior
+### 8.2 Show journal behavior
 
 If learningModeEnabled:
 
@@ -350,7 +350,7 @@ If learningModeEnabled:
   - create/edit/delete transactions
   - view dashboard summaries
   - view statements
-  - toggle Learning Mode
+  - toggle Show journal
 - Accounting:
   - journal lines exist for every transaction and are balanced
 - Reliability:

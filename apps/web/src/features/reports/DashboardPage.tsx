@@ -106,7 +106,7 @@ export const DashboardPage = () => {
   const currencyFormatter = useMemo(() => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: user?.currency ?? "USD",
+      currency: user?.currency ?? "PHP",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -319,3 +319,4 @@ export const DashboardPage = () => {
     </>
   );
 };
+

@@ -1,6 +1,6 @@
-# Student Finance Tracker (MVP)
+# FlowLedger (MVP)
 
-Monorepo for a backend-first student finance tracker with simplified double-entry accounting and optional learning mode.
+Monorepo for a backend-first finance tracker with simplified double-entry accounting and optional journal visibility.
 
 ## Quick start
 
@@ -85,7 +85,7 @@ Useful commands:
 
 `npm run db:seed` creates/updates this demo login and resets only that user's finance data to a known dataset:
 
-- Email: `demo@studentfinance.dev`
+- Email: `demo@flowledger.dev`
 - Password: `DemoPass123!`
 - Accounts: `3`
 - Categories: `8`
