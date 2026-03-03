@@ -1,22 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PublicUser } from "@sft/shared";
-import {
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState
-} from "react";
+import { type PropsWithChildren, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../utils/api-client";
-import { getMe, logout } from "./api";
 import { AuthSessionContext, type AuthSessionContextValue } from "./auth-session-context";
+import { useLogoutMutation } from "./hooks/useAuthMutations";
+import { useAuthSessionQuery } from "./hooks/useAuthSessionQuery";
+import { authQueryKeys } from "./queryKeys";
 import {
   clearStoredAccessToken,
   getStoredAccessToken,
-  setStoredAccessToken
+  setStoredAccessToken,
 } from "./token-storage";
-
-const authSessionQueryKey = ["auth", "me"];
 
 export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
@@ -25,16 +19,10 @@ export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
   const clearSession = useCallback(() => {
     clearStoredAccessToken();
     setAccessToken(null);
-    queryClient.removeQueries({ queryKey: authSessionQueryKey });
+    queryClient.removeQueries({ queryKey: authQueryKeys.base });
   }, [queryClient]);
 
-  const meQuery = useQuery({
-    queryKey: [...authSessionQueryKey, accessToken],
-    queryFn: () => getMe(accessToken as string),
-    enabled: Boolean(accessToken),
-    retry: false,
-    staleTime: 60_000
-  });
+  const meQuery = useAuthSessionQuery(accessToken);
 
   useEffect(() => {
     if (meQuery.error instanceof ApiError && meQuery.error.status === 401 && accessToken) {
@@ -46,11 +34,11 @@ export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
     (nextAccessToken: string, user: PublicUser) => {
       setStoredAccessToken(nextAccessToken);
       setAccessToken(nextAccessToken);
-      queryClient.setQueryData([...authSessionQueryKey, nextAccessToken], {
-        user
+      queryClient.setQueryData(authQueryKeys.session(nextAccessToken), {
+        user,
       });
     },
-    [queryClient]
+    [queryClient],
   );
 
   const setCurrentUser = useCallback(
@@ -59,23 +47,12 @@ export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
         return;
       }
 
-      queryClient.setQueryData([...authSessionQueryKey, accessToken], { user });
+      queryClient.setQueryData(authQueryKeys.session(accessToken), { user });
     },
-    [accessToken, queryClient]
+    [accessToken, queryClient],
   );
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      if (!accessToken) {
-        return;
-      }
-
-      await logout(accessToken);
-    },
-    onSettled: () => {
-      clearSession();
-    }
-  });
+  const logoutMutation = useLogoutMutation(accessToken, clearSession);
 
   const value = useMemo<AuthSessionContextValue>(() => {
     const user = meQuery.data?.user ?? null;
@@ -91,7 +68,7 @@ export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
       clearSession,
       logoutSession: async () => {
         await logoutMutation.mutateAsync();
-      }
+      },
     };
   }, [
     accessToken,
@@ -100,7 +77,7 @@ export const AuthSessionProvider = ({ children }: PropsWithChildren) => {
     meQuery.data?.user,
     meQuery.isLoading,
     setCurrentUser,
-    setSession
+    setSession,
   ]);
 
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;

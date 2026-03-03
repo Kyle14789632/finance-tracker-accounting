@@ -1,13 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import type { LoginRequest } from "@sft/shared";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../../components/branding/BrandLogo";
-import { login } from "./api";
 import { useAuthSession } from "./auth-session-context";
 import { applyServerFormErrors } from "./form-errors";
+import { useLoginMutation } from "./hooks/useAuthMutations";
 import { loginRequestSchema } from "./schemas";
 
 export const LoginPage = () => {
@@ -19,14 +18,12 @@ export const LoginPage = () => {
     register,
     handleSubmit,
     setError,
-    formState: { errors }
+    formState: { errors },
   } = useForm<LoginRequest>({
-    resolver: zodResolver(loginRequestSchema)
+    resolver: zodResolver(loginRequestSchema),
   });
 
-  const loginMutation = useMutation({
-    mutationFn: login
-  });
+  const loginMutation = useLoginMutation();
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -48,7 +45,9 @@ export const LoginPage = () => {
         <p className="mt-2 text-sm text-slate-600">Sign in to continue tracking your finances.</p>
 
         {formError ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</div>
+          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {formError}
+          </div>
         ) : null}
 
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
@@ -60,7 +59,9 @@ export const LoginPage = () => {
               className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               {...register("email")}
             />
-            {errors.email ? <span className="mt-1 block text-xs text-rose-600">{errors.email.message}</span> : null}
+            {errors.email ? (
+              <span className="mt-1 block text-xs text-rose-600">{errors.email.message}</span>
+            ) : null}
           </label>
 
           <label className="block">
@@ -71,7 +72,9 @@ export const LoginPage = () => {
               className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
               {...register("password")}
             />
-            {errors.password ? <span className="mt-1 block text-xs text-rose-600">{errors.password.message}</span> : null}
+            {errors.password ? (
+              <span className="mt-1 block text-xs text-rose-600">{errors.password.message}</span>
+            ) : null}
           </label>
 
           <button
