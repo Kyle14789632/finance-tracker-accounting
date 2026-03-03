@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { JsonWebTokenError, NotBeforeError, TokenExpiredError } from "jsonwebtoken";
 import { ZodError } from "zod";
-import { AppError } from "../utils/app-error";
+import { AppError } from "../core/errors/app-error";
 
 type ApiErrorBody = {
   error: {
@@ -30,9 +30,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
         message: "Request validation failed",
         details: err.issues.map((issue) => ({
           path: issue.path.join("."),
-          message: issue.message
-        }))
-      }
+          message: issue.message,
+        })),
+      },
     });
     return;
   }
@@ -41,8 +41,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(401).json({
       error: {
         code: "TOKEN_EXPIRED",
-        message: "Access token has expired"
-      }
+        message: "Access token has expired",
+      },
     });
     return;
   }
@@ -51,8 +51,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(401).json({
       error: {
         code: "INVALID_TOKEN",
-        message: "Access token is invalid"
-      }
+        message: "Access token is invalid",
+      },
     });
     return;
   }
@@ -68,8 +68,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const payload: ApiErrorBody = {
     error: {
       code,
-      message
-    }
+      message,
+    },
   };
 
   if (appError.details !== undefined) {
@@ -81,7 +81,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
       ...(typeof payload.error.details === "object" && payload.error.details !== null
         ? (payload.error.details as Record<string, unknown>)
         : {}),
-      requestId
+      requestId,
     };
   }
 

@@ -37,12 +37,10 @@ apps/
 api/
 src/
 index.ts
-server.ts
-routes/
-controllers/
-services/
+app/
+core/
+modules/
 middleware/
-utils/
 config/
 prisma/
 schema.prisma
@@ -65,8 +63,6 @@ packages/
 shared/
 src/
 schemas/ # zod schemas shared across FE/BE (preferred)
-types/
-constants/
 package.json
 turbo.json
 package.json
@@ -76,7 +72,9 @@ tasks.md
 
 Rules:
 
-- Keep API logic in api/services; controllers are thin.
+- Keep API logic grouped by feature in `api/src/modules/<feature>`.
+- Inside a feature module, use: route -> controller -> service -> repository.
+- Keep controllers thin and keep Prisma usage inside repositories.
 - Keep Zod schemas in packages/shared when possible (DRY validation + typing).
 - Use feature folders in web for scaling.
 
@@ -227,12 +225,17 @@ When learningModeEnabled:
 
 ## 8) Backend architecture pattern (recommended)
 
-- routes/ -> controller handlers only
-- controllers/ -> parse/validate input, call service, return response
-- services/ -> business logic, DB ops, invariants
-- middleware/ -> auth, error, logging, rate-limits
+- `app/` -> app bootstrap and route registration
+- `core/` -> cross-cutting helpers (http, errors, money, datetime, db)
+- `modules/<feature>/`:
+  - `<feature>.route.ts` -> route definitions
+  - `<feature>.controller.ts` -> parse/validate, call service, return response
+  - `<feature>.service.ts` -> business logic and invariants
+  - `<feature>.repository.ts` -> Prisma/data access only
+  - `<feature>.mapper.ts` -> DB-to-contract transformations
+- `middleware/` -> auth, error, logging, rate-limits
 
-No Prisma calls inside controllers unless trivial and explicitly allowed.
+No Prisma calls inside controllers/services. Use repository boundaries.
 
 ## 9) Frontend architecture pattern
 
@@ -272,6 +275,32 @@ Minimum manual coverage:
 - Report: monthly summary totals match
 
 Automated tests are optional during MVP and can be added in hardening.
+
+Current backend baseline:
+
+- Add and maintain unit tests for module services (`apps/api/src/**/*.test.ts`).
+- Keep manual API regression checks for auth, transactions/journal, and reports.
+- For new backend modules, add at least:
+  - happy path service test
+  - core invariant or failure-path test
+
+## 14) Adding a Backend Module
+
+When adding a new API module, use this checklist:
+
+1. Create folder: `apps/api/src/modules/<feature>/`.
+2. Add files:
+   - `<feature>.route.ts`
+   - `<feature>.controller.ts`
+   - `<feature>.service.ts`
+   - `<feature>.repository.ts`
+   - `<feature>.mapper.ts` (if mapping is needed)
+   - `index.ts`
+3. Put request/query/response schemas in `packages/shared/src/schemas/*` when they are API contracts.
+4. Register the router in `apps/api/src/app/register-routes.ts`.
+5. Keep auth/user scoping in repository queries (`where: { userId }`).
+6. Add service unit tests in the same module folder.
+7. Run: `npm run lint -w @sft/api`, `npm run build -w @sft/api`, `npm run test -w @sft/api`.
 
 ## 12) Module order (MVP)
 

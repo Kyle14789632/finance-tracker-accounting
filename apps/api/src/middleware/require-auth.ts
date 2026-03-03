@@ -1,13 +1,6 @@
 import type { RequestHandler } from "express";
-import { AppError } from "../utils/app-error";
-import { verifyAccessToken } from "../utils/auth";
-
-export type AuthLocals = {
-  auth: {
-    userId: string;
-    email: string;
-  };
-};
+import { AppError } from "../core/errors/app-error";
+import { verifyAccessToken } from "../modules/auth/auth-token";
 
 export const requireAuth: RequestHandler = (req, res, next) => {
   const authorizationHeader = req.headers.authorization;
@@ -28,7 +21,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     const payload = verifyAccessToken(token);
     res.locals.auth = {
       userId: payload.sub,
-      email: payload.email
+      email: payload.email,
     };
     next();
   } catch (error) {
